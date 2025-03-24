@@ -1,17 +1,16 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { App } from "./components/App/App.jsx";
 import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import { Alert, Spin  } from "antd";
+import { Offline, Online } from "react-detect-offline";
+// import "bootswatch/dist/cosmo/bootstrap.min.css";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <>
+    <Online><App /></Online>
+    <div className='offline'>
+    <Offline>  <Spin size="large" /> <Alert type="error" message={`Oops! Check your internet connection :(`} /></Offline>
+    </div>
+    </>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

@@ -1,0 +1,68 @@
+.card{
+  display: flex;
+  max-width: 451px;
+  height: 279px;
+}
+
+.card__image img {
+  max-width: 183px;
+  max-height: 281px;
+  margin-right: 20px;
+}
+
+
+.card__information{
+  text-overflow: ellipsis;
+  overflow: auto;
+  
+}
+
+.card__information .card__info{
+  font-size: 12px;
+  padding-bottom: 49px;
+  padding-right: 20px;
+  line-height: 22px;
+}
+
+.ant-card-body{
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  max-width: 451px;
+  max-height: 279px;
+}
+
+.ant-card-body h1{
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 400;
+  margin-top: 10px;
+  margin-bottom: 7px;
+}
+.ant-card-body h3{
+  font-size: 12px;
+  line-height: 22px;
+  margin-bottom: 7px;
+  font-weight: 400;
+  color:#827E7E ;
+}
+
+:where(.css-dev-only-do-not-override-tjsggz).ant-card-bordered {
+    border-radius: 0;
+    padding: 0;
+    box-shadow: 0 4px 12px 0 #00000026;
+}
+
+:where(.css-dev-only-do-not-override-tjsggz).ant-card .ant-card-body {
+  padding: 0;
+}
+
+:where(.css-dev-only-do-not-override-tjsggz).ant-tag {
+  font-size: 12px;
+  padding: 4px 15px;
+  background-color: #FAFAFA;
+  border: 1px solid #D9D9D9;
+  color: #000000A6;
+  border-radius: 5%;
+  margin-bottom: 7px;
+  line-height: 100%;
+}
