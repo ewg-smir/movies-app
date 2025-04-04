@@ -9,7 +9,10 @@ import './App.css';
 export const AppContext = React.createContext('');
 
 export const App = () => {
-  const [items, setItems] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [ratedMovies, setRatedMovies] = useState([]);
+  const [searchPage, setSearchPage] = useState(1);
+  const [ratedPage, setRatedPage] = useState(1);
   const [page, setPage] = useState(1);
   const [searchValue, setSearchValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +20,7 @@ export const App = () => {
   const [genres, setGenres] = useState('');
   const [guestSessionId, setGuestSessionId] = useState(null);
   const [totalResults, setTotalResults] = useState(0);
+  const [activeTab, setActiveTab] = useState('1');
 
   const handleSearchValueChange = (event) => {
     const searchValue = event.target.value;
@@ -68,74 +72,90 @@ export const App = () => {
     setIsLoading(true);
     setHasError(false);
     try {
-      const search = searchValue ? `query=${searchValue}&` : '';
+      const search = searchValue ? `query=${searchValue}&` : "";
       const response = await fetch(
         `https://api.themoviedb.org/3/search/movie?${search}include_adult=false&api_key=662f624214017c402a0e9ec5d1612c7b&language=en-US&page=${page}`
       );
       const json = await response.json();
-      setItems(json.results || []);
+      const updated = json.results?.map((item) => {
+        const rated = ratedMovies.find((r) => r.id === item.id);
+        return rated ? { ...item, ratedStars: rated.ratedStars } : item;
+      }) || [];
+      setSearchResults(updated);
       setTotalResults(json.total_results || 0);
     } catch (error) {
       setHasError(true);
-      setItems([]);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
     window.scrollTo(0, 0);
-  }, []); 
-
+  }, [ratedMovies]);
+  
   const debounceFn = useCallback(
     _debounce((params) => fetchMovies(params), 1000),
     [fetchMovies]
   );
 
   useEffect(() => {
-    debounceFn({ searchValue, page });
-  }, [searchValue, page, debounceFn]);
+    if (activeTab === '1') {
+      debounceFn({ searchValue, page: searchPage });
+    }
+  }, [searchValue, searchPage, debounceFn, activeTab]);
 
   const onChangeStars = (id, value) => {
-    setItems((prev) =>
+    setSearchResults((prev) =>
       prev.map((item) => item.id === id ? { ...item, ratedStars: value } : item)
-    )
-  }
+    );
 
-  const cards = items.map((obj) => (
+    setRatedMovies((prev) => {
+      const exists = prev.find((item) => item.id === id);
+      if (exists) {
+        return prev.map((item) =>
+          item.id === id ? { ...item, ratedStars: value } : item
+        );
+      }
+      const ratedItem = searchResults.find((item) => item.id === id);
+      return ratedItem ? [...prev, { ...ratedItem, ratedStars: value }] : prev;
+    });
+  };
+
+  const searchCards = searchResults.map((obj) => (
     <Cart
-      className='justify-items: center;'
-      id={obj.id}
-      onChangeStars={onChangeStars}
-      ratedStars={obj.ratedStars || 0}
       key={obj.id}
-      rate={obj.vote_average.toFixed(1)}
+      id={obj.id}
       title={obj.title}
       info={obj.overview}
       img={obj.poster_path}
       date={obj.release_date}
+      rate={obj.vote_average.toFixed(1)}
       genreArr={obj.genre_ids}
+      ratedStars={obj.ratedStars || 0}
+      onChangeStars={onChangeStars}
     />
   ));
 
+  const ratedCards = ratedMovies.map((obj) => (
+    <Cart
+      key={obj.id}
+      id={obj.id}
+      title={obj.title}
+      info={obj.overview}
+      img={obj.poster_path}
+      date={obj.release_date}
+      rate={obj.vote_average.toFixed(1)}
+      genreArr={obj.genre_ids}
+      ratedStars={obj.ratedStars || 0}
+      onChangeStars={onChangeStars}
+    />
+  ));
   const loading = <Spin className="loading" size="large" />;
-  const ratedMovies = items.filter(item => item.ratedStars > 0);
-  const filterCards = ratedMovies.map((obj) => (
-    <Cart
-      onChangeStars={onChangeStars}
-      ratedStars={obj.ratedStars || 0}
-      id={obj.id}
-      key={obj.id}
-      rate={obj.vote_average.toFixed(1)}
-      title={obj.title}
-      info={obj.overview}
-      img={obj.poster_path}
-      date={obj.release_date}
-      genreArr={obj.genre_ids}
-    />
-  ));
+
 
   const tabItems = [
     {
-      key: '1',
-      label: 'Search',
+      key: "1",
+      label: "Search",
       children: (
         <>
           <Input
@@ -148,20 +168,20 @@ export const App = () => {
               <>
                 {!searchValue && <Alert message="Write something" type="warning" closable />}
                 {hasError && <Alert message="Nothing was found" type="error" closable />}
-                {!hasError && searchValue && items.length === 0 && (
+                {!hasError && searchValue && searchResults.length === 0 && (
                   <Alert message="Nothing was found" type="warning" closable />
                 )}
-                {items.length > 0 && cards}
+                {searchCards}
               </>
             )}
           </div>
           <div className="pagination-container">
-            {cards.length !== 0 && (
+            {searchResults.length > 0 && (
               <Pagination
                 total={totalResults}
                 pageSize={20}
-                current={page}
-                onChange={(page) => setPage(page)}
+                current={searchPage}
+                onChange={(page) => setSearchPage(page)}
                 showSizeChanger={false}
               />
             )}
@@ -170,27 +190,24 @@ export const App = () => {
       ),
     },
     {
-      key: '2',
-      label: 'Rated',
+      key: "2",
+      label: "Rated",
       children: (
         <>
           <div className="wrapper">
-            {isLoading ? loading : (
-              <>
-                {filterCards.length === 0 && (
-                  <Alert message="Nothing was found" type="warning" closable />
-                )}
-                {items.length > 0 && filterCards}
-              </>
+            {ratedCards.length === 0 ? (
+              <Alert message="Nothing was found" type="warning" closable />
+            ) : (
+              ratedCards.slice((ratedPage - 1) * 20, ratedPage * 20)
             )}
           </div>
           <div className="pagination-container">
-            {filterCards.length !== 0 && (
+            {ratedCards.length > 0 && (
               <Pagination
-                total={totalResults}
+                total={ratedCards.length}
                 pageSize={20}
-                current={page}
-                onChange={(page) => setPage(page)}
+                current={ratedPage}
+                onChange={(page) => setRatedPage(page)}
                 showSizeChanger={false}
               />
             )}
@@ -204,7 +221,8 @@ export const App = () => {
     <div className="App">
       <AppContext.Provider value={{ genres }}>
         <Tabs
-          defaultActiveKey="1"
+          activeKey={activeTab}
+          onChange={setActiveTab}
           centered
           items={tabItems}
         />
